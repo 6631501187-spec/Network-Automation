@@ -1,0 +1,26 @@
+{#- Cisco IOS data-plane + OSPFv2 template.
+    Rendered from the validated topology JSON only (app/ios.py).
+    The management interface and SSH settings are never touched. -#}
+configure terminal
+no router ospf {{ process_id }}
+{% for intf in interfaces %}
+interface {{ intf.name }}
+ ip address {{ intf.ip }} {{ intf.mask }}
+ no shutdown
+ exit
+{% endfor %}
+router ospf {{ process_id }}
+{% if router_id %}
+ router-id {{ router_id }}
+{% endif %}
+{% for intf in interfaces %}
+{% if intf.role == "lan" %}
+ passive-interface {{ intf.name }}
+{% else %}
+ no passive-interface {{ intf.name }}
+{% endif %}
+{% endfor %}
+{% for net in networks %}
+ network {{ net.address }} {{ net.wildcard }} area {{ area }}
+{% endfor %}
+end

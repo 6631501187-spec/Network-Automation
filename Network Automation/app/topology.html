@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Network Automation</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { max-width: 1160px; margin: auto; padding: 40px 24px; font: 16px/1.6 system-ui, sans-serif; color: #193452; background: white; }
+    h1 { font-size: clamp(28px, 4vw, 42px); margin: 12px 0; color: #102b4e; }
+    h2 { font-size: 22px; border-bottom: 1px solid #dce5ef; padding-bottom: 15px; }
+    .eyebrow { font-size: 12px; letter-spacing: 2px; font-weight: 700; }
+    .muted { color: #61738a; }
+    a { color: #143d68; }
+    section { border: 1px solid #dce5ef; border-radius: 12px; padding: 26px; margin: 28px 0; }
+    label { display: block; margin: 16px 0 10px; font-weight: 600; }
+    input[type=file] { width: 100%; padding: 18px; border: 1px dashed #b6c6d9; border-radius: 8px; background: #f5f8fc; }
+    button { background: #102b4e; color: white; padding: 12px 20px; border: 1px solid #102b4e; border-radius: 7px; font: inherit; cursor: pointer; margin: 12px 8px 0 0; }
+    button.secondary { background: white; color: #102b4e; border-color: #dce5ef; }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+    button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #86add8; outline-offset: 3px; }
+    #preview { display: block; max-width: 100%; max-height: 440px; margin: 22px auto; object-fit: contain; }
+    pre { max-height: 500px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #f5f8fc; padding: 20px; border-radius: 8px; font: 13px/1.8 Consolas, monospace; }
+    #commands pre { background: #102641; color: #e8f1fc; }
+    .status { padding: 15px 18px; background: #f5f8fc; border-left: 3px solid #193e66; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .error { color: #922c39; border-color: #922c39; }
+    .success { color: #256b4a; border-color: #256b4a; }
+    .confirm { font-weight: 400; }
+    [hidden] { display: none !important; }
+    fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+    legend { padding: 0; margin-bottom: 8px; font-size: 14px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0 18px; font-size: 14px; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #dce5ef; vertical-align: middle; }
+    td input, td select, .rid input { width: 100%; min-width: 120px; padding: 7px 8px; border: 1px solid #b6c6d9; border-radius: 6px; font: inherit; }
+    td input:disabled { background: #eef2f6; }
+    .rid { display: flex; gap: 10px; align-items: center; max-width: 360px; }
+    .rid input { min-width: 0; }
+    .amb { padding: 12px 14px; margin: 8px 0; border-left: 3px solid #922c39; background: #fbf5f6; }
+    .amb label { margin: 0 0 6px; font-weight: 400; display: flex; gap: 10px; align-items: flex-start; }
+    .amb input[type=text] { width: 100%; padding: 7px 8px; border: 1px solid #d9c0c5; border-radius: 6px; font: inherit; }
+    .amb.done { border-color: #256b4a; background: #f3faf6; }
+    .resolved { font-size: 14px; color: #256b4a; }
+    .ok { color: #256b4a; } .bad { color: #922c39; }
+    details { margin: 14px 0; }
+    @media(max-width: 640px) { body { padding: 24px 14px; } section { padding: 18px; } button { width: 100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="eyebrow">NETWORK AUTOMATION</span>
+    <h1>AI Network Automation</h1>
+    <p class="muted">Upload the diagram. Review its configuration. Approve and deploy.</p>
+    <a href="/jobs" target="_blank" rel="noopener">Open job monitor ↗</a>
+  </header>
+  <section>
+    <h2>Topology diagram</h2>
+    <form id="uploadForm">
+      <label for="image">Instructor diagram — PNG or JPG, up to 5 MB</label>
+      <input id="image" type="file" accept="image/png,image/jpeg" required>
+      <p class="muted">IP addresses and subnet masks are read from the image. The exam’s OSPF rules are applied automatically.</p>
+      <img id="preview" alt="Selected topology diagram" hidden>
+      <button id="generate" type="submit">Generate</button>
+    </form>
+    <p id="message" class="status" role="status" aria-live="polite">Select a diagram with readable address labels.</p>
+  </section>
+  <section id="planSection" hidden>
+    <h2>Generated topology — review and resolve</h2>
+    <p id="planInfo" class="muted"></p>
+    <div id="ambiguityBox"></div>
+    <fieldset id="editFields">
+      <legend class="muted">Correct anything the AI got wrong. Interface names must be the routers’ real names — use “Discover router interfaces”. PC addresses are optional (PCs are configured by hand).</legend>
+      <div id="editor"></div>
+    </fieldset>
+    <div id="discovered"></div>
+    <button id="discover" class="secondary" type="button">Discover router interfaces</button>
+    <button id="save" type="button" disabled>Save changes</button>
+    <details><summary>Structured topology JSON</summary><pre id="topology"></pre></details>
+    <button id="review" class="secondary">Review commands</button>
+    <button id="validate" class="secondary" disabled>Validate</button>
+  </section>
+  <section id="reviewSection" hidden>
+    <h2>Proposed IOS commands</h2>
+    <p id="issues" class="status"></p>
+    <div id="commands"></div>
+    <pre id="validation" hidden></pre>
+  </section>
+  <section id="approvalSection" hidden>
+    <h2>Approve and deploy</h2>
+    <label class="confirm"><input id="confirmation" type="checkbox"> I reviewed the commands and the passed validation results.</label>
+    <button id="approve" disabled>Approve</button>
+    <button id="deploy" disabled>Deploy</button>
+    <p id="jobMessage" class="status" hidden></p>
+  </section>
+  <script>
+    const $ = id => document.getElementById(id);
+    let plan = null, busy = false, reviewed = false, validated = false;
+    let queued = false, timer = null, previewUrl = null;
+    let dirty = false, discovered = {};
+
+    function message(text, error = false) {
+      $('message').textContent = text;
+      $('message').className = 'status' + (error ? ' error' : '');
+    }
+    function controls() {
+      $('image').disabled = busy;
+      $('generate').disabled = busy;
+      const locked = plan?.approved === true;
+      $('editFields').disabled = busy || locked;
+      $('discover').disabled = busy || !plan || locked;
+      $('save').disabled = busy || !dirty || locked;
+      $('review').disabled = busy || !plan || dirty;
+      $('validate').disabled = busy || !reviewed || dirty || locked;
+      $('confirmation').disabled = busy || !validated || plan?.approved === true;
+      $('approve').disabled = busy || !validated || !$('confirmation').checked || plan?.approved === true;
+      $('deploy').disabled = busy || plan?.approved !== true || queued;
+    }
+    async function request(path, options = {}) {
+      const response = await fetch(path, options);
+      const text = await response.text();
+      let body;
+      try { body = JSON.parse(text); }
+      catch { throw new Error('Unexpected server response: HTTP ' + response.status); }
+      if (!response.ok) throw new Error(typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail || body, null, 2));
+      return body;
+    }
+    function post(path, body = {}) {
+      return request(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    }
+    function endpoint(action) { return '/api/plans/' + encodeURIComponent(plan.plan_id) + '/' + action; }
+    async function action(fn) {
+      if (busy) return;
+      busy = true; controls();
+      try { await fn(); }
+      catch (error) { message(error.message, true); }
+      finally { busy = false; controls(); }
+    }
+    function resetPlan() {
+      if (timer) clearTimeout(timer);
+      timer = null; plan = null; reviewed = false; validated = false; queued = false;
+      dirty = false; discovered = {}; $('discovered').replaceChildren();
+      $('confirmation').checked = false;
+      for (const id of ['planSection', 'reviewSection', 'approvalSection', 'validation', 'jobMessage']) $(id).hidden = true;
+      $('commands').replaceChildren(); controls();
+    }
+    $('image').addEventListener('change', () => {
+      resetPlan();
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const file = $('image').files[0];
+      $('preview').hidden = !file;
+      if (file) { previewUrl = URL.createObjectURL(file); $('preview').src = previewUrl; }
+      message('Click Generate to analyze the selected diagram.');
+    });
+    $('uploadForm').addEventListener('submit', event => {
+      event.preventDefault();
+      if (busy) return;
+      const file = $('image').files[0];
+      if (!file || file.size > 5 * 1024 * 1024) { message('Select a PNG/JPG up to 5 MB.', true); return; }
+      resetPlan();
+      action(async () => {
+        message('Analyzing the diagram…');
+        const form = new FormData();
+        form.append('image', file);
+        plan = await request('/api/analyze', {method: 'POST', body: form});
+        renderPlan();
+        $('planSection').hidden = false;
+        $('approvalSection').hidden = false;
+        message(plan.topology.ambiguities.length
+          ? 'Draft saved. The AI flagged items to resolve — correct the values if needed, tick each item and Save.'
+          : 'Draft saved. Check the values, then click Review commands.');
+      });
+    });
+
+    // ---------- Review & resolve editor ----------
+    function el(tag, attrs = {}, text) {
+      const node = document.createElement(tag);
+      for (const [key, value] of Object.entries(attrs)) {
+        if (value === false || value === null || value === undefined) continue;
+        node.setAttribute(key, value === true ? '' : value);
+      }
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+    function field(path, value, extra = {}) {
+      return el('input', {type: 'text', 'data-path': path, value: value ?? '', ...extra});
+    }
+    function renderPlan() {
+      const t = plan.topology;
+      $('planInfo').textContent = 'Plan: ' + plan.plan_id + ' — ' + plan.status +
+        (plan.edit_count ? ' — edited by administrator ' + plan.edit_count + ' time(s)' : '');
+      $('topology').textContent = JSON.stringify(t, null, 2);
+
+      const box = $('ambiguityBox');
+      box.replaceChildren();
+      if (t.ambiguities.length) {
+        box.append(el('h3', {}, 'Flagged by the AI — resolve each item'));
+        box.append(el('p', {class: 'muted'}, 'Fix the values below where needed, then tick the item as resolved and say how. Unresolved items block approval.'));
+        t.ambiguities.forEach((text, i) => {
+          const item = el('div', {class: 'amb'});
+          const label = el('label');
+          label.append(el('input', {type: 'checkbox', 'data-amb': i, 'aria-label': 'Mark as resolved: ' + text}), el('span', {}, text));
+          item.append(label, el('input', {type: 'text', 'data-note': i, placeholder: 'Resolution note (e.g. “Lab uses FastEthernet2/0 for the LAN; f0/0 is management”)'}));
+          box.append(item);
+        });
+      } else {
+        box.append(el('p', {class: 'resolved'}, '✔ No open ambiguities.'));
+      }
+      for (const r of plan.resolved_ambiguities || []) {
+        box.append(el('p', {class: 'resolved'}, '✔ Resolved: ' + r.ambiguity + (r.note ? ' — ' + r.note : '')));
+      }
+
+      const editor = $('editor');
+      editor.replaceChildren();
+      t.routers.forEach((router, ri) => {
+        editor.append(el('h3', {}, router.name));
+        const rid = el('label', {class: 'rid'}, 'Router ID');
+        rid.append(field(`routers.${ri}.router_id`, router.router_id));
+        editor.append(rid);
+        const table = el('table');
+        table.innerHTML = '<thead><tr><th>Interface (real name)</th><th>Role</th><th>IPv4 address / prefix</th><th>On the router</th></tr></thead>';
+        const body = el('tbody');
+        router.interfaces.forEach((intf, ii) => {
+          const base = `routers.${ri}.interfaces.${ii}`;
+          const row = el('tr');
+          const name = field(base + '.name', intf.name, {list: 'if-' + router.name, 'aria-label': router.name + ' interface name'});
+          const role = el('select', {'data-path': base + '.role', 'aria-label': 'Role'});
+          for (const option of ['lan', 'transit', 'management', 'unknown']) {
+            role.append(el('option', {value: option, selected: option === intf.role}, option));
+          }
+          const ip = field(base + '.ipv4_cidr', intf.ipv4_cidr, {placeholder: intf.role === 'management' ? 'not configured' : 'e.g. 10.0.0.1/24', disabled: intf.role === 'management', 'aria-label': 'IPv4 address'});
+          const actual = el('td', {'data-actual': router.name});
+          for (const control of [name, role, ip]) {
+            const cell = el('td');
+            cell.append(control);
+            row.append(cell);
+          }
+          row.append(actual);
+          body.append(row);
+        });
+        table.append(body);
+        const wrap = el('div', {class: 'table-wrap'});
+        wrap.append(table);
+        editor.append(wrap, el('datalist', {id: 'if-' + router.name}));
+      });
+
+      if (t.pcs.length) {
+        editor.append(el('h3', {}, 'PCs (optional — configured manually)'));
+        const table = el('table');
+        table.innerHTML = '<thead><tr><th>PC</th><th>IPv4 address / prefix</th><th>Gateway</th></tr></thead>';
+        const body = el('tbody');
+        t.pcs.forEach((pc, pi) => {
+          const row = el('tr');
+          row.append(el('td', {}, pc.name));
+          for (const control of [field(`pcs.${pi}.ipv4_cidr`, pc.ipv4_cidr, {placeholder: 'optional'}), field(`pcs.${pi}.gateway`, pc.gateway, {placeholder: 'optional'})]) {
+            const cell = el('td');
+            cell.append(control);
+            row.append(cell);
+          }
+          body.append(row);
+        });
+        table.append(body);
+        const wrap = el('div', {class: 'table-wrap'});
+        wrap.append(table);
+        editor.append(wrap);
+      }
+      dirty = false;
+      updateActual();
+      controls();
+    }
+
+    function updateActual() {
+      for (const [name, info] of Object.entries(discovered)) {
+        const list = $('if-' + name);
+        if (list) {
+          list.replaceChildren(...(info.interfaces || []).map(i => el('option', {value: i.name}, (i.ip || 'unassigned') + (i.management ? ' (SSH management)' : ''))));
+        }
+      }
+      document.querySelectorAll('td[data-actual]').forEach(cell => {
+        const router = cell.dataset.actual;
+        const name = cell.parentElement.querySelector('input[data-path$=".name"]').value.trim();
+        const role = cell.parentElement.querySelector('select').value;
+        const info = discovered[router];
+        cell.className = '';
+        if (!info) { cell.textContent = '—'; return; }
+        if (info.error) { cell.textContent = info.error; cell.className = 'bad'; return; }
+        const found = (info.interfaces || []).find(i => i.name === name);
+        if (!found) { cell.textContent = '✘ not on ' + router; cell.className = 'bad'; return; }
+        if (found.management && role !== 'management') { cell.textContent = '✘ carries SSH — must be management'; cell.className = 'bad'; return; }
+        cell.textContent = '✔ ' + (found.ip || 'unassigned') + ', ' + found.status + (found.management ? ' (SSH management)' : '');
+        cell.className = 'ok';
+      });
+    }
+
+    $('editor').addEventListener('input', event => {
+      if (event.target.matches('select[data-path$=".role"]')) {
+        const ip = event.target.closest('tr').querySelector('input[data-path$=".ipv4_cidr"]');
+        ip.disabled = event.target.value === 'management';
+        if (ip.disabled) ip.value = '';
+      }
+      dirty = true; reviewed = false; validated = false; $('confirmation').checked = false;
+      updateActual();
+      controls();
+      message('Unsaved changes — click Save changes.');
+    });
+    $('ambiguityBox').addEventListener('input', event => {
+      const item = event.target.closest('.amb');
+      if (item) item.classList.toggle('done', item.querySelector('input[type=checkbox]').checked);
+      dirty = true; reviewed = false; validated = false;
+      controls();
+    });
+
+    function collectEdits() {
+      const t = structuredClone(plan.topology);
+      const renames = [];
+      document.querySelectorAll('#editor [data-path]').forEach(input => {
+        const keys = input.dataset.path.split('.');
+        let target = t;
+        for (const key of keys.slice(0, -1)) target = target[key];
+        const last = keys.at(-1);
+        const value = input.value.trim();
+        if (last === 'name' && target.name !== value && keys[0] === 'routers') {
+          renames.push({router: t.routers[+keys[1]].name, from: target.name, to: value});
+        }
+        target[last] = value === '' ? null : value;
+      });
+      for (const router of t.routers) {
+        for (const intf of router.interfaces) if (intf.role === 'management') intf.ipv4_cidr = null;
+      }
+      // Keep links pointing at renamed interfaces.
+      for (const {router, from, to} of renames) {
+        for (const link of t.links) {
+          if (link.device_a === router && link.interface_a === from) link.interface_a = to;
+          if (link.device_b === router && link.interface_b === from) link.interface_b = to;
+        }
+      }
+      const resolved = [];
+      const open = [];
+      t.ambiguities.forEach((text, i) => {
+        const checked = document.querySelector(`[data-amb="${i}"]`)?.checked;
+        const note = document.querySelector(`[data-note="${i}"]`)?.value.trim() || '';
+        if (checked) resolved.push({ambiguity: text, note}); else open.push(text);
+      });
+      t.ambiguities = open;
+      return {topology: t, resolved};
+    }
+
+    $('save').onclick = () => action(async () => {
+      const edits = collectEdits();
+      plan = await request(endpoint('topology'), {method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(edits)});
+      reviewed = false; validated = false;
+      $('reviewSection').hidden = true;
+      renderPlan();
+      message(plan.topology.ambiguities.length
+        ? 'Saved. ' + plan.topology.ambiguities.length + ' item(s) still open.'
+        : 'Saved. Click Review commands to see the regenerated configuration.');
+    });
+
+    $('discover').onclick = () => action(async () => {
+      message('Reading interfaces from the routers (show ip interface brief, read-only)…');
+      const result = await post(endpoint('discover'));
+      discovered = result.routers || {};
+      const panel = $('discovered');
+      panel.replaceChildren(el('h3', {}, 'Interfaces found on the routers'));
+      for (const [name, info] of Object.entries(discovered)) {
+        if (info.error) { panel.append(el('p', {class: 'bad'}, name + ': ' + info.error)); continue; }
+        panel.append(el('p', {class: 'muted'}, name + ' (' + info.host + ', hostname ' + info.hostname + '): ' +
+          info.interfaces.map(i => i.name + ' ' + (i.ip || 'unassigned') + (i.management ? ' [SSH management]' : '')).join(' · ')));
+      }
+      updateActual();
+      message('Interfaces discovered. Pick real names from the suggestions; ✘ marks must be fixed before validation.');
+    });
+
+    $('review').onclick = () => action(async () => {
+      reviewed = false; validated = false; $('confirmation').checked = false;
+      $('validation').hidden = true;
+      const result = await request(endpoint('review'));
+      $('commands').replaceChildren();
+      for (const [name, lines] of Object.entries(result.proposed_commands || {})) {
+        const title = document.createElement('h3'); title.textContent = name;
+        const code = document.createElement('pre'); code.textContent = lines.join('\n');
+        $('commands').append(title, code);
+      }
+      const errors = [...(result.ambiguities || []), ...(result.generation_errors || [])];
+      reviewed = errors.length === 0 && Object.keys(result.proposed_commands || {}).length > 0;
+      const resolvedCount = (result.resolved_ambiguities || []).length;
+      $('issues').textContent = errors.length
+        ? 'Open items (resolve them in the topology section above and Save):\n' + errors.join('\n')
+        : 'Review the addressing and commands, then validate.' +
+          (resolvedCount ? ' ' + resolvedCount + ' AI-flagged item(s) were resolved by the administrator.' : '');
+      $('issues').className = 'status' + (errors.length ? ' error' : '');
+      $('reviewSection').hidden = false;
+      message(reviewed ? 'Commands ready for review and validation.' : 'Resolve the open items in the topology section, then Save and review again.', !reviewed);
+    });
+    $('validate').onclick = () => action(async () => {
+      validated = false; $('confirmation').checked = false;
+      message('Checking addressing, actual interfaces and SSH access…');
+      const result = await post(endpoint('validate'));
+      validated = result.passed === true;
+      $('validation').textContent = JSON.stringify(result, null, 2);
+      $('validation').hidden = false;
+      message(validated ? 'Validation passed. Confirm your review and approve.' : 'Validation failed. Review the errors below.', !validated);
+    });
+    $('confirmation').onchange = controls;
+    $('approve').onclick = () => action(async () => {
+      const result = await post(endpoint('approve'), {confirmation: 'APPROVE'});
+      plan.approved = result.approved === true;
+      plan.status = result.status;
+      $('planInfo').textContent = 'Plan: ' + plan.plan_id + ' — ' + plan.status + ' — config SHA-256 ' + (result.config_sha256 || '').slice(0, 16) + '…';
+      message('Approval saved. Click Deploy to queue the configuration.');
+    });
+    $('deploy').onclick = () => {
+      if (busy || queued || !confirm('Deploy this approved configuration to the routers?')) return;
+      action(async () => {
+        // Lock the button while delivery is uncertain to avoid repeated clicks.
+        queued = true;
+        message('Sending the approved job to Kafka…');
+        const result = await post(endpoint('deploy'));
+        $('jobMessage').hidden = false;
+        $('jobMessage').textContent = 'Job ' + result.job_id + ' — ' + result.status;
+        message('Job queued. Keep your existing worker running and open the job monitor.');
+        pollJob(result.job_id, plan.plan_id);
+      });
+    };
+    async function pollJob(jobId, planId) {
+      try {
+        const response = await fetch('/api/jobs/' + encodeURIComponent(jobId));
+        if (!plan || plan.plan_id !== planId) return;
+        if (response.status === 404) {
+          $('jobMessage').textContent = 'Job ' + jobId + ' — queued; waiting for the worker to create its status record.';
+        } else {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          const job = await response.json();
+          $('jobMessage').textContent = 'Job ' + jobId + '\n' + job.status + ' — ' + (job.stage || '') + '\n';
+          const link = document.createElement('a');
+          link.href = '/jobs?job=' + encodeURIComponent(jobId);
+          link.target = '_blank';
+          link.textContent = 'Open deployment output and OSPF verification ↗';
+          $('jobMessage').append(link);
+          $('jobMessage').className = 'status' + (job.status === 'FAILED' ? ' error' : job.status === 'SUCCESS' ? ' success' : '');
+          if (['SUCCESS', 'FAILED'].includes(job.status)) return;
+        }
+      } catch (error) {
+        if (!plan || plan.plan_id !== planId) return;
+        $('jobMessage').textContent = 'Status check failed: ' + error.message + '. Check the job monitor.';
+      }
+      timer = setTimeout(() => pollJob(jobId, planId), 3000);
+    }
+    controls();
+  </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+! One-time management bootstrap for the exam routers (c7200, GNS3 project "LabExam").
+! Paste on each router's console. Replace <PASSWORD> with your own password and do
+! NOT commit the filled-in version. This only enables SSH management on f0/0 (DHCP);
+! the data-plane interfaces (f1/0, f2/0) and OSPF are configured by the automation.
+!
+! Wiring: f0/0 = management -> Switch1 -> Cloud1 (VMnet1, 192.168.115.0/24, DHCP)
+!         f1/0 = R1-R2 link (10.1.0.0/24)
+!         f2/0 = LAN (R1 -> PC1 10.0.0.0/24, R2 -> PC2 10.2.0.0/24)
+
+! ---------- R1 (console: telnet 127.0.0.1 5000) ----------
+configure terminal
+hostname R1
+no ip domain-lookup
+ip domain-name lab.local
+username admin privilege 15 secret <PASSWORD>
+crypto key generate rsa modulus 2048
+ip ssh version 2
+file prompt quiet
+interface FastEthernet0/0
+ ip address dhcp
+ no shutdown
+ exit
+line vty 0 4
+ login local
+ transport input ssh
+ exit
+end
+write memory
+
+! ---------- R2 (console: telnet 127.0.0.1 5001) ----------
+! Same block as R1, with "hostname R2".
+
+! ---------- After ~30 s, on each router read the DHCP management address ----------
+show ip interface brief | include FastEthernet0/0
+
+! ---------- VPCS ----------
+! PC1 console:
+ip 10.0.0.10/24 10.0.0.1
+save
+! PC2 console:
+ip 10.2.0.10/24 10.2.0.2
+save
