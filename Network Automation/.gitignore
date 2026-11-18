@@ -1,0 +1,22 @@
+# Secrets
+.env
+*.pem
+*.key
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Runtime data (uploads, plans, jobs, logs, locks)
+data/
+
+# Local backups from development
+backups/
+backup-*/
+*.backup
+*.before-*
+*-backup
+*.groq-backup
+*.image-only-replacement
+app/topology.before-*.html
