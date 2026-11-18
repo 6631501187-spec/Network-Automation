@@ -1,0 +1,17 @@
+$ tail data/logs/worker.log   (job 554327e6 = screenshot run)
+1:[08:53:42] worker@lone:172772 waiting for jobs on network-config-jobs (localhost:39092); backend http://127.0.0.1:8000
+2:[09:04:50] Received job 4e1b4e0c-d3fb-4ebc-afd7-6fc9cd76a18d (plan 1af3d304-3a6c-4580-964c-2164c699e9c8, devices ['R1', 'R2'])
+13:[10:49:10] Received job 554327e6-6117-4822-a7d6-3031bc84c8b6 (plan 35447ddf-b2b6-48dd-ae7d-5fcd450ce833, devices ['R1', 'R2'])
+[10:49:10] Received job 554327e6-6117-4822-a7d6-3031bc84c8b6 (plan 35447ddf-b2b6-48dd-ae7d-5fcd450ce833, devices ['R1', 'R2'])
+[10:49:10] RUNNING: deploying R1
+[10:49:13] RUNNING: configured R1
+[10:49:13] RUNNING: deploying R2
+[10:49:16] RUNNING: configured R2
+[10:49:16] RUNNING: verifying OSPF on R1
+[10:49:30] RUNNING: verified R1
+[10:49:30] RUNNING: verifying OSPF on R2
+[10:49:31] RUNNING: verified R2
+[10:49:31] SUCCESS: deployed and verified: OSPF FULL, remote LANs learned via OSPF, no static routes
+[10:49:31] Kafka offset committed. Waiting for the next job...
+
+--- duplicate delivery test (earlier run)

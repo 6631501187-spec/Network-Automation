@@ -720,13 +720,18 @@ def jobs_dashboard():
       }
     }
 
-    async function loadDetails(jobId) {
-      details.textContent = "Loading…";
-      jobActions.replaceChildren();
+    let selectedJob = null, selectedStatus = null;
+
+    async function loadDetails(jobId, quiet = false) {
+      if (!quiet) details.textContent = "Loading…";
+      selectedJob = jobId;
       try {
         const response = await fetch("/api/jobs/" + encodeURIComponent(jobId));
         if (!response.ok) throw new Error("Request failed: " + response.status);
         const job = await response.json();
+        if (selectedJob !== jobId) return;
+        selectedStatus = job.status;
+        jobActions.replaceChildren();
         details.textContent = JSON.stringify(job, null, 2);
         renderSummary(job);
         if (job.status === "FAILED") {
@@ -762,7 +767,13 @@ def jobs_dashboard():
 
     document.getElementById("refresh").addEventListener("click", loadJobs);
     loadJobs();
-    setInterval(loadJobs, 5000);
+    setInterval(() => {
+      loadJobs();
+      // Keep the open job's details live until it reaches a final state.
+      if (selectedJob && !["SUCCESS", "FAILED", "REVOKED"].includes(selectedStatus)) {
+        loadDetails(selectedJob, true);
+      }
+    }, 5000);
     const requested = new URLSearchParams(location.search).get("job");
     if (requested) loadDetails(requested);
   </script>

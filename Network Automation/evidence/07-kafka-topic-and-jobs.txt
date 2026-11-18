@@ -1,0 +1,20 @@
+$ docker compose ps
+NAME                      IMAGE                STATUS                 PORTS
+ai-network-exam-kafka-1   apache/kafka:4.1.2   Up 4 hours (healthy)   9092/tcp, 127.0.0.1:39092->39092/tcp
+
+$ docker compose exec kafka kafka-topics.sh --describe --topic network-config-jobs
+Topic: network-config-jobs	TopicId: 2bsplDfRT0CLPC6Hzbo32A	PartitionCount: 1	ReplicationFactor: 1	Configs: min.insync.replicas=1
+	Topic: network-config-jobs	Partition: 0	Leader: 1	Replicas: 1	Isr: 1	Elr: 	LastKnownElr: 
+
+$ docker compose exec kafka kafka-console-consumer.sh --topic network-config-jobs --from-beginning
+{"job_id": "c68c5def-05a1-4376-98e0-d1bb44b25f0b", "plan_id": "89541ef9-6d07-4951-8529-e88b99920c19", "device_ids": ["R1", "R2"], "config_sha256": "84bc17b776c5f6aa4dce44d459d3cdd2c7a19f1ac8147fa45e0e57a90df7f60e", "approved_config_ref": "/api/plans/89541ef9-6d07-4951-8529-e88b99920c19/approved-config", "requested_at": "2026-11-18T08:04:36.572301+00:00"}
+{"job_id": "c68c5def-05a1-4376-98e0-d1bb44b25f0b", "plan_id": "89541ef9-6d07-4951-8529-e88b99920c19", "device_ids": ["R1", "R2"], "config_sha256": "84bc17b776c5f6aa4dce44d459d3cdd2c7a19f1ac8147fa45e0e57a90df7f60e", "approved_config_ref": "/api/plans/89541ef9-6d07-4951-8529-e88b99920c19/approved-config", "requested_at": "2026-11-18T08:04:36.572301+00:00"}
+{"job_id": "07e42e00-e35c-461b-aedd-2e5cfdf572a1", "plan_id": "490fe71a-730d-44bd-ba91-387cda3d2f96", "device_ids": ["R1", "R2"], "config_sha256": "60249164d3390034e76ecd4bd26940dc36673b913bdf7e94f640c5964c06edb5", "approved_config_ref": "/api/plans/490fe71a-730d-44bd-ba91-387cda3d2f96/approved-config", "requested_at": "2026-11-18T08:33:24.812781+00:00"}
+{"job_id": "0b2309ea-3fa3-4c5c-b510-7d41efdb129f", "plan_id": "4c57b5d7-b877-4c5c-b05a-8183b8ce135b", "device_ids": ["R1", "R2"], "config_sha256": "25ca453c1997011c99ed84181729477feb8a137cd50ede8e57bd1c9c395dc227", "approved_config_ref": "/api/plans/4c57b5d7-b877-4c5c-b05a-8183b8ce135b/approved-config", "requested_at": "2026-11-18T08:40:21.348463+00:00"}
+{"job_id": "4e1b4e0c-d3fb-4ebc-afd7-6fc9cd76a18d", "plan_id": "1af3d304-3a6c-4580-964c-2164c699e9c8", "device_ids": ["R1", "R2"], "config_sha256": "25ca453c1997011c99ed84181729477feb8a137cd50ede8e57bd1c9c395dc227", "approved_config_ref": "/api/plans/1af3d304-3a6c-4580-964c-2164c699e9c8/approved-config", "requested_at": "2026-11-18T09:04:50.285587+00:00"}
+{"job_id": "554327e6-6117-4822-a7d6-3031bc84c8b6", "plan_id": "35447ddf-b2b6-48dd-ae7d-5fcd450ce833", "device_ids": ["R1", "R2"], "config_sha256": "25ca453c1997011c99ed84181729477feb8a137cd50ede8e57bd1c9c395dc227", "approved_config_ref": "/api/plans/35447ddf-b2b6-48dd-ae7d-5fcd450ce833/approved-config", "requested_at": "2026-11-18T10:49:10.212447+00:00"}
+
+$ docker compose exec kafka kafka-consumer-groups.sh --describe --group network-config-worker
+
+GROUP                 TOPIC               PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                  HOST            CLIENT-ID
+network-config-worker network-config-jobs 0          6               6               0               rdkafka-70318644-1b07-4d9e-9def-aa8bbf482953 /172.18.0.1     rdkafka

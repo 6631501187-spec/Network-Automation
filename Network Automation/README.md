@@ -114,6 +114,13 @@ Notes:
 | Management interface chosen for a LAN | Blocked in the UI and by validation |
 | Rollback | Data-plane interfaces reset; management SSH still up |
 
+## Report and evidence
+
+- Short report (architecture and test results): [`docs/REPORT.md`](docs/REPORT.md)
+- Evidence screenshots with an index mapping each exam requirement and checklist item to a file:
+  [`evidence/README.md`](evidence/README.md)
+- Demo runbook: [`docs/DEMO.md`](docs/DEMO.md) · submission guide: [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
+
 ## Security
 
 - Secrets (`GROQ_API_KEY`, `SSH_PASSWORD`) live only in `.env`, which is git-ignored; `.env.example` has empty values.

@@ -1,6 +1,6 @@
 # AI-Driven Network Configuration and Automation Using OSPF — Short Report
 
-**Student:** _name_ · **ID:** _student ID_ · **Date:** _date_
+**Student:** Myo Thet Paing · **ID:** 6631501187 · **Date:** 18 November 2026
 
 ## 1. Objective
 
@@ -85,21 +85,24 @@ R2 is symmetrical (10.2.0.2/24 on f2/0, 10.1.0.2/24 on f1/0, router ID 2.2.2.2).
 
 ## 5. Test results
 
+The screenshot run (files in `evidence/`, see `evidence/README.md`) used an instructor-style alternative diagram:
+R1 LAN 10.20.0.0/24, R1–R2 172.16.5.0/24, R2 LAN 192.168.50.0/24, PCs .11. The exam diagram itself was run
+several times earlier in the same lab with the same results (generated configuration in §4).
+
 | # | Test | Expected | Result | Evidence |
 |---|---|---|---|---|
-| 1 | Upload exam diagram | Preview, Generate available | Pass | 03 |
-| 2 | AI analysis | Correct devices, addresses, links, OSPF plan; no false ambiguities | Pass — all addresses and router IDs correct, no ambiguities | 04 |
-| 3 | Interface discovery | Real names; management interface identified | Pass — f0/0 marked SSH management | 05 |
-| 4 | Generated IOS | Per-router interfaces, OSPF 1 area 0, passive LAN | Pass — matches §4 exactly | 06 |
-| 5 | Validation | Static and live checks pass | Pass | 07 |
-| 6 | Approval + Kafka | Job PENDING; message with IDs + hash only | Pass | 08–10 |
-| 7 | Worker + Paramiko | Both routers configured, output collected | Pass — PENDING → RUNNING → SUCCESS in about 1 minute (_fill in from screenshot 12_) | 11–13 |
-| 8 | OSPF verification | FULL; remote LAN via OSPF; no static routes | Pass — R1: 2.2.2.2 FULL, `O 10.2.0.0/24`; R2: 1.1.1.1 FULL, `O 10.0.0.0/24` | 14–17 |
-| 9 | End-to-end | PC1 pings 10.2.0.10 | Pass — 4/4 replies, TTL 62 (two router hops) | 18 |
-| 10 | Duplicate Kafka message | Not executed twice | Pass — rejected at claim ("Job is SUCCESS") | 19 |
-| 11 | Alternative diagram (other addressing, conflicting interface labels, no PCs) | Conflict flagged, not guessed; resolvable | Pass — flagged, resolved in the editor, deployed and verified (FULL, remote LAN via OSPF, LAN-to-LAN ping 100%) | 20–21 |
-| 12 | Management interface chosen for a LAN | Blocked | Pass — editor marks ✘ and validation rejects it | 22 |
-| 13 | Rollback | Data plane reset, SSH kept | Pass — f1/0 and f2/0 reset, f0/0 still up | — |
+| 1 | Upload diagram | Preview, Generate available | Pass | `02`, `03` |
+| 2 | AI analysis, exam diagram | Correct devices, addresses, links, OSPF plan; no false ambiguities | Pass — all addresses and router IDs correct, no ambiguities (earlier run) | config in §4 |
+| 3 | AI analysis, alternative diagram with Fa0/0 labels on the LANs | Conflict with the real wiring flagged, not guessed | Pass — label conflict flagged; resolved by the administrator with the real names (LAN f2/0, f0/0 management) | `04` |
+| 4 | Generated IOS | Per-router interfaces, OSPF 1 area 0, router IDs, passive LAN | Pass | `05` |
+| 5 | Validation | Static and live checks pass | Pass — both routers: hostname, privilege 15, interface names, management protection | `06` |
+| 6 | Kafka producer | Message with job ID, device IDs, config hash and reference only | Pass — 6 job messages on `network-config-jobs`; consumer group lag 0 | `07` |
+| 7 | Worker + Paramiko | Both routers configured, output collected | Pass — RUNNING → SUCCESS in 21 s (10:49:10–10:49:31 UTC); earlier runs 54–73 s | `08`–`11` |
+| 8 | OSPF verification | FULL; remote LAN via OSPF; no static routes | Pass — R1: 2.2.2.2 FULL/BDR, `O 192.168.50.0/24`; R2: 1.1.1.1 FULL/DR, `O 10.20.0.0`; process ospf 1, RIDs 1.1.1.1 / 2.2.2.2, LAN passive | `12`–`16` |
+| 9 | End-to-end | PC1 pings PC2 | Pass — 10.20.0.11 → 192.168.50.11 5/5, TTL 62 (two router hops), and the reverse; exam diagram: PC1 → 10.2.0.10 4/4, TTL 62 (earlier run) | `17`, `18` |
+| 10 | Duplicate Kafka message | Not executed twice | Pass — re-sent message rejected at claim ("Job is SUCCESS; it will not be executed again") | worker log (earlier run) |
+| 11 | Management interface chosen for a LAN | Blocked | Pass — editor marks ✘ "carries SSH", validation rejects it | — |
+| 12 | Rollback | Data plane reset, SSH kept | Pass — f1/0 and f2/0 reset, f0/0 still up | — |
 
 ## 6. Problems encountered and solutions
 
