@@ -1,0 +1,135 @@
+{
+  "plan_id": "35447ddf-b2b6-48dd-ae7d-5fcd450ce833",
+  "model": "qwen/qwen3.8-27b",
+  "created_at": "2026-11-18T10:44:27.620410+00:00",
+  "ai_output_topology": {
+    "routers": [
+      {
+        "name": "R1",
+        "router_id": "1.1.1.1",
+        "interfaces": [
+          {
+            "name": "FastEthernet2/0",
+            "role": "lan",
+            "ipv4_cidr": "10.20.0.1/24"
+          },
+          {
+            "name": "FastEthernet1/0",
+            "role": "transit",
+            "ipv4_cidr": "172.16.5.1/24"
+          },
+          {
+            "name": "FastEthernet0/0",
+            "role": "management",
+            "ipv4_cidr": null
+          }
+        ]
+      },
+      {
+        "name": "R2",
+        "router_id": "2.2.2.2",
+        "interfaces": [
+          {
+            "name": "FastEthernet2/0",
+            "role": "lan",
+            "ipv4_cidr": "192.168.50.1/24"
+          },
+          {
+            "name": "FastEthernet1/0",
+            "role": "transit",
+            "ipv4_cidr": "172.16.5.2/24"
+          },
+          {
+            "name": "FastEthernet0/0",
+            "role": "management",
+            "ipv4_cidr": null
+          }
+        ]
+      }
+    ],
+    "pcs": [],
+    "other_devices": [],
+    "links": [
+      {
+        "device_a": "R1",
+        "interface_a": "FastEthernet1/0",
+        "device_b": "R2",
+        "interface_b": "FastEthernet1/0"
+      }
+    ],
+    "ospf_process_id": 1,
+    "ospf_area": "0",
+    "ambiguities": [
+      "Diagram interface labels (Fa0/0, Fa1/0) conflict with the configured interface inventory (lan_interface: FastEthernet2/0, transit_interface: FastEthernet1/0, management_interface: FastEthernet0/0). The inventory mapping was applied as per instructions, but the physical interface names in the diagram do not match the inventory."
+    ]
+  },
+  "resolved_ambiguities": [
+    {
+      "ambiguity": "Diagram interface labels (Fa0/0, Fa1/0) conflict with the configured interface inventory (lan_interface: FastEthernet2/0, transit_interface: FastEthernet1/0, management_interface: FastEthernet0/0). The inventory mapping was applied as per instructions, but the physical interface names in the diagram do not match the inventory.",
+      "note": "",
+      "resolved_at": "2026-11-18T10:48:01.362558+00:00"
+    }
+  ],
+  "approved_topology": {
+    "routers": [
+      {
+        "name": "R1",
+        "router_id": "1.1.1.1",
+        "interfaces": [
+          {
+            "name": "FastEthernet2/0",
+            "role": "lan",
+            "ipv4_cidr": "10.20.0.1/24"
+          },
+          {
+            "name": "FastEthernet1/0",
+            "role": "transit",
+            "ipv4_cidr": "172.16.5.1/24"
+          },
+          {
+            "name": "FastEthernet0/0",
+            "role": "management",
+            "ipv4_cidr": null
+          }
+        ]
+      },
+      {
+        "name": "R2",
+        "router_id": "2.2.2.2",
+        "interfaces": [
+          {
+            "name": "FastEthernet2/0",
+            "role": "lan",
+            "ipv4_cidr": "192.168.50.1/24"
+          },
+          {
+            "name": "FastEthernet1/0",
+            "role": "transit",
+            "ipv4_cidr": "172.16.5.2/24"
+          },
+          {
+            "name": "FastEthernet0/0",
+            "role": "management",
+            "ipv4_cidr": null
+          }
+        ]
+      }
+    ],
+    "pcs": [],
+    "other_devices": [],
+    "links": [
+      {
+        "device_a": "R1",
+        "interface_a": "FastEthernet1/0",
+        "device_b": "R2",
+        "interface_b": "FastEthernet1/0"
+      }
+    ],
+    "ospf_process_id": 1,
+    "ospf_area": "0",
+    "ambiguities": []
+  },
+  "status": "APPROVED",
+  "config_sha256": "25ca453c1997011c99ed84181729477feb8a137cd50ede8e57bd1c9c395dc227",
+  "deployment_status": "SUCCESS"
+}
